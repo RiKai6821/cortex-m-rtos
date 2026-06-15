@@ -60,8 +60,11 @@ int queue_send(queue_t *q, const void *item) {
         return 0;
     }
 
-    /* full: park ourselves with a pointer to the item to be taken later */
-    current_tcb->msg = (void *)item;
+    /* Full: park ourselves, recording where the item is. The receiver only
+     * *reads* through this pointer (copies the item out), so discarding const
+     * here is safe; the field is void* because it doubles as a writable
+     * destination buffer when a task blocks on receive instead. */
+    current_tcb->msg = (void *)(uintptr_t)item;
     os_block_and_yield(&q->send_wait, p);
     return 0;
 }
